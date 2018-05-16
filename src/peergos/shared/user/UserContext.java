@@ -108,7 +108,7 @@ public class UserContext {
                             crypto.random, crypto.signer, crypto.boxer, algorithm)
                             .thenCompose(userWithRoot ->
                                     login(username, userWithRoot, pair, network, crypto, progressCallback));
-                }).exceptionally(Futures::logError);
+                }).exceptionally(Futures::logAndThrow);
     }
 
     public static CompletableFuture<UserContext> signIn(String username, UserWithRoot userWithRoot, NetworkAccess network
@@ -116,7 +116,7 @@ public class UserContext {
         return getWriterDataCbor(network, username)
                 .thenCompose(pair -> {
                     return login(username, userWithRoot, pair, network, crypto, progressCallback);
-                }).exceptionally(Futures::logError);
+                }).exceptionally(Futures::logAndThrow);
     }
 
     private static CompletableFuture<UserContext> login(String username, UserWithRoot userWithRoot, Pair<Multihash, CborObject> pair
@@ -141,7 +141,7 @@ public class UserContext {
                                         .thenCompose(x -> {
                                             System.out.println("Initializing context..");
                                             return result.init(progressCallback);
-                                        }).exceptionally(Futures::logError);
+                                        }).exceptionally(Futures::logAndThrow);
                             }));
         } catch (Throwable t) {
             throw new IllegalStateException("Incorrect password");
@@ -221,7 +221,7 @@ public class UserContext {
                                 context.sendInitialFollowRequest(PEERGOS_USERNAME) :
                                 CompletableFuture.completedFuture(true))
                         .thenApply(b -> context))
-                .exceptionally(Futures::logError);
+                .exceptionally(Futures::logAndThrow);
     }
 
     @JsMethod
@@ -369,7 +369,7 @@ public class UserContext {
         List<UserPublicKeyLink> claimChain = UserPublicKeyLink.createInitial(signer, username, expiry);
 
         return network.coreNode.updateChain(username, claimChain).exceptionally(t  -> {
-                throw new IllegalStateException("Could not renew username-claim for user "+ username);
+                throw new IllegalStateException("Could not renew username-claim for user "+ username, t);
         });
 
     }
@@ -1049,7 +1049,7 @@ public class UserContext {
                 .filter(e -> e.owner.equals(ourName))
                 .collect(Collectors.toList());
         return Futures.reduceAll(ourFileSystemEntries, root, (t, e) -> addEntryPoint(ourName, t, e, network), (a, b) -> a)
-                .exceptionally(Futures::logError);
+                .exceptionally(Futures::logAndThrow);
     }
 
     /**
@@ -1068,7 +1068,7 @@ public class UserContext {
                         .orElse(CompletableFuture.completedFuture(new Pair<>(entry, Optional.empty())))))
                 .collect(Collectors.toList());
         return Futures.reduceAll(retrievedEntries, ourRoot, (t, p) -> addRetrievedEntryPoint(ourName, t, p, network), (a, b) -> a)
-                .exceptionally(Futures::logError);
+                .exceptionally(Futures::logAndThrow);
     }
 
     private static CompletableFuture<TrieNode> addRetrievedEntryPoint(String ourName,
@@ -1122,7 +1122,7 @@ public class UserContext {
                         });
             }
             return CompletableFuture.completedFuture(root);
-        }).exceptionally(Futures::logError);
+        }).exceptionally(Futures::logAndThrow);
     }
 
     private CompletableFuture<Boolean> cleanOurEntryPoint(EntryPoint e) {
