@@ -173,7 +173,9 @@ public class UserService
         Path quotaFilePath = Paths.get("quotas.txt");
         Path usagePath = Paths.get("usage.json");
         UserQuotas userQuotas = new UserQuotas(quotaFilePath, defaultQuota);
+
         SpaceCheckingKeyFilter spaceChecker = new SpaceCheckingKeyFilter(coreNode, mutable, dht, userQuotas::quota, usagePath);
+        spaceChecker.calculateUsage();
 
         server.createContext(DHT_URL,
                 wrap.apply(new DHTHandler(dht, spaceChecker::allowWrite)));
