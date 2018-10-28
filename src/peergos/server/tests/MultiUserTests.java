@@ -75,6 +75,7 @@ public class MultiUserTests {
                     }}).collect(Collectors.toList());
     }
 
+//kev
     @Test
     public void shareAndUnshareFile() throws Exception {
         UserContext u1 = UserTests.ensureSignedUp("a", "a", network.clear(), crypto);
@@ -104,14 +105,29 @@ public class MultiUserTests {
         File f = File.createTempFile("peergos", "");
         byte[] originalFileContents = "Hello Peergos friend!".getBytes();
         Files.write(f.toPath(), originalFileContents);
-        ResetableFileInputStream resetableFileInputStream = new ResetableFileInputStream(f);
-        FileTreeNode uploaded = u1Root.uploadFile(filename, resetableFileInputStream, f.length(),
-                u1.network, u1.crypto.random,l -> {}, u1.fragmenter()).get();
 
+        ResetableFileInputStream resetableFileInputStream = new ResetableFileInputStream(f);
+        u1Root.uploadFile(filename, resetableFileInputStream, f.length(), u1.network, u1.crypto.random,l -> {}, u1.fragmenter()).get();
         // share the file from "a" to each of the others
-        FileTreeNode u1File = u1.getByPath(u1.username + "/" + filename).get().get();
         u1.shareWith(Paths.get(u1.username, filename), userContexts.stream().map(u -> u.username).collect(Collectors.toSet())).get();
 
+        u1Root = u1.getUserRoot().get();
+        filename = "somefile.2.txt";
+        resetableFileInputStream = new ResetableFileInputStream(f);
+        u1Root.uploadFile(filename, resetableFileInputStream, f.length(), u1.network, u1.crypto.random,l -> {}, u1.fragmenter()).get();
+        // share the file from "a" to each of the others
+        u1.shareWith(Paths.get(u1.username, filename), userContexts.stream().map(u -> u.username).collect(Collectors.toSet())).get();
+
+
+        u1Root = u1.getUserRoot().get();
+        filename = "somefile.3.txt";
+        resetableFileInputStream = new ResetableFileInputStream(f);
+        u1Root.uploadFile(filename, resetableFileInputStream, f.length(), u1.network, u1.crypto.random,l -> {}, u1.fragmenter()).get();
+        // share the file from "a" to each of the others
+        u1.shareWith(Paths.get(u1.username, filename), userContexts.stream().map(u -> u.username).collect(Collectors.toSet())).get();
+
+        u1.buildCapabilityCache();
+        CapabilityCache cache = u1.readCapabilityCache().get();
         // check other users can read the file
         for (UserContext userContext : userContexts) {
             Optional<FileTreeNode> sharedFile = userContext.getByPath(u1.username + "/" + filename).get();
