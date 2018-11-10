@@ -15,7 +15,6 @@ import peergos.shared.user.fs.cryptree.*;
 import peergos.shared.util.*;
 
 import java.io.*;
-import java.lang.reflect.*;
 import java.net.*;
 import java.nio.file.*;
 import java.util.*;
@@ -125,9 +124,16 @@ public class MultiUserTests {
         u1Root.uploadFile(filename, resetableFileInputStream, f.length(), u1.network, u1.crypto.random,l -> {}, u1.fragmenter()).get();
         // share the file from "a" to each of the others
         u1.shareWith(Paths.get(u1.username, filename), userContexts.stream().map(u -> u.username).collect(Collectors.toSet())).get();
+        /*
+        UserContext otherUser = userContexts.get(0);
+        Map<String, List<RetrievedCapability>> result = otherUser.buildRetrievedCapabilityCache().get();
+        otherUser.saveRetrievedCapabilityCache(result);
+        Map<String, List<RetrievedCapability>> cache = otherUser.readCapabilityCache().get();
+        */
 
-        u1.buildCapabilityCache();
-        CapabilityCache cache = u1.readCapabilityCache().get();
+        UserContext userAgain = UserTests.ensureSignedUp("username_0", "username_0", network.clear(), crypto);
+
+
         // check other users can read the file
         for (UserContext userContext : userContexts) {
             Optional<FileTreeNode> sharedFile = userContext.getByPath(u1.username + "/" + filename).get();
