@@ -15,6 +15,7 @@ import peergos.shared.user.fs.cryptree.*;
 import peergos.shared.util.*;
 
 import java.io.*;
+import java.lang.reflect.*;
 import java.net.*;
 import java.nio.file.*;
 import java.util.*;
@@ -74,7 +75,6 @@ public class MultiUserTests {
                     }}).collect(Collectors.toList());
     }
 
-//kev
     @Test
     public void shareAndUnshareFile() throws Exception {
         UserContext u1 = UserTests.ensureSignedUp("a", "a", network.clear(), crypto);
@@ -104,38 +104,13 @@ public class MultiUserTests {
         File f = File.createTempFile("peergos", "");
         byte[] originalFileContents = "Hello Peergos friend!".getBytes();
         Files.write(f.toPath(), originalFileContents);
-
         ResetableFileInputStream resetableFileInputStream = new ResetableFileInputStream(f);
-        u1Root.uploadFile(filename, resetableFileInputStream, f.length(), u1.network, u1.crypto.random,l -> {}, u1.fragmenter()).get();
+        FileTreeNode uploaded = u1Root.uploadFile(filename, resetableFileInputStream, f.length(),
+                u1.network, u1.crypto.random,l -> {}, u1.fragmenter()).get();
+
         // share the file from "a" to each of the others
+        FileTreeNode u1File = u1.getByPath(u1.username + "/" + filename).get().get();
         u1.shareWith(Paths.get(u1.username, filename), userContexts.stream().map(u -> u.username).collect(Collectors.toSet())).get();
-
-        u1Root = u1.getUserRoot().get();
-        filename = "somefile.2.txt";
-        resetableFileInputStream = new ResetableFileInputStream(f);
-        u1Root.uploadFile(filename, resetableFileInputStream, f.length(), u1.network, u1.crypto.random,l -> {}, u1.fragmenter()).get();
-        // share the file from "a" to each of the others
-        u1.shareWith(Paths.get(u1.username, filename), userContexts.stream().map(u -> u.username).collect(Collectors.toSet())).get();
-
-
-        u1Root = u1.getUserRoot().get();
-        filename = "somefile.3.txt";
-        resetableFileInputStream = new ResetableFileInputStream(f);
-        u1Root.uploadFile(filename, resetableFileInputStream, f.length(), u1.network, u1.crypto.random,l -> {}, u1.fragmenter()).get();
-        // share the file from "a" to each of the others
-        u1.shareWith(Paths.get(u1.username, filename), userContexts.stream().map(u -> u.username).collect(Collectors.toSet())).get();
-        /*
-        UserContext otherUser = userContexts.get(0);
-        Map<String, List<RetrievedCapability>> result = otherUser.buildRetrievedCapabilityCache().get();
-        otherUser.saveRetrievedCapabilityCache(result);
-        Map<String, List<RetrievedCapability>> cache = otherUser.readCapabilityCache().get();
-        */
-
-        //UserContext userAgain = UserTests.ensureSignedUp("username_0", "username_0", network.clear(), crypto);
-        //userAgain.unShare(Paths.get(userAgain.username, filename), "username_0").get();
-
-        UserContext userAgain = UserTests.ensureSignedUp("a", "a", network.clear(), crypto);
-
 
         // check other users can read the file
         for (UserContext userContext : userContexts) {
