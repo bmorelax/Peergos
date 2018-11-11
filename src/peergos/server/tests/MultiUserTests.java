@@ -131,8 +131,10 @@ public class MultiUserTests {
         Map<String, List<RetrievedCapability>> cache = otherUser.readCapabilityCache().get();
         */
 
-        UserContext userAgain = UserTests.ensureSignedUp("username_0", "username_0", network.clear(), crypto);
+        //UserContext userAgain = UserTests.ensureSignedUp("username_0", "username_0", network.clear(), crypto);
         //userAgain.unShare(Paths.get(userAgain.username, filename), "username_0").get();
+
+        UserContext userAgain = UserTests.ensureSignedUp("a", "a", network.clear(), crypto);
 
 
         // check other users can read the file
