@@ -10,6 +10,7 @@ public class Multipart {
     private HttpURLConnection httpConn;
     private String charset;
     private OutputStream out;
+    private ByteArrayOutputStream cache;
     private PrintWriter writer;
 
     public Multipart(String requestURL, String charset) throws IOException {
@@ -25,8 +26,9 @@ public class Multipart {
         httpConn.setRequestProperty("Expect", "100-continue");
         httpConn.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + boundary);
         httpConn.setRequestProperty("User-Agent", "Java IPFS Client");
-        out = httpConn.getOutputStream();
-        writer = new PrintWriter(new OutputStreamWriter(out, charset), true);
+        httpConn.setRequestProperty("Connection", "keep-alive");
+        cache = new ByteArrayOutputStream();
+        writer = new PrintWriter(new OutputStreamWriter(cache, charset), true);
     }
 
     public static String createBoundary() {
@@ -96,8 +98,8 @@ public class Multipart {
         byte[] buffer = new byte[4096];
         int r;
         while ((r = inputStream.read(buffer)) != -1)
-            out.write(buffer, 0, r);
-        out.flush();
+            cache.write(buffer, 0, r);
+        cache.flush();
         inputStream.close();
 
         writer.append(LINE_FEED);
@@ -112,32 +114,51 @@ public class Multipart {
     public String finish() throws IOException {
         StringBuilder b = new StringBuilder();
 
-        writer.append("--" + boundary + "--").append(LINE_FEED);
-        writer.close();
-
-        int status = httpConn.getResponseCode();
-        if (status == HttpURLConnection.HTTP_OK) {
-            BufferedReader reader = new BufferedReader(new InputStreamReader(
-                    httpConn.getInputStream()));
-            String line;
-            while ((line = reader.readLine()) != null) {
-                b.append(line);
-            }
-            reader.close();
-            httpConn.disconnect();
-        } else {
-            try {
+        System.out.println("POSTER: FINISHING MULTIPART POST "  + Thread.currentThread().getId());
+        try {
+            writer.append("--" + boundary + "--").append(LINE_FEED);
+            writer.flush();
+            System.out.println("POSTER: CLOSED OUTPUT STREAM " + Thread.currentThread().getId());
+            byte[] bytes = cache.toByteArray();
+            httpConn.setRequestProperty("Content-Length", ""+bytes.length);
+            out = httpConn.getOutputStream();
+            out.write(bytes);
+            out.flush();
+            int status = httpConn.getResponseCode();
+            System.out.println("POSTER: GETTING RESPONSE CODE " + Thread.currentThread().getId());
+            if (status == HttpURLConnection.HTTP_OK) {
                 BufferedReader reader = new BufferedReader(new InputStreamReader(
                         httpConn.getInputStream()));
                 String line;
                 while ((line = reader.readLine()) != null) {
                     b.append(line);
                 }
+                System.out.println("CLOSING MPC INPUTSTREAM "+ Thread.currentThread().getId());
                 reader.close();
-            } catch (Throwable t) {}
-            throw new IOException("Server returned status: " + status + " with body: "+b.toString() + " and Trailer header: "+httpConn.getHeaderFields().get("Trailer"));
-        }
+//                httpConn.disconnect();
+            } else {
+                try {
+                    BufferedReader reader = new BufferedReader(new InputStreamReader(
+                            httpConn.getInputStream()));
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        b.append(line);
+                    }
+                    System.out.println("CLOSING MPC INPUTSTREAM "+ Thread.currentThread().getId());
+                    reader.close();
+                } catch (Throwable t) {
+                }
+                throw new IOException("Server returned status: " + status + " with body: " + b.toString() + " and Trailer header: " + httpConn.getHeaderFields().get("Trailer"));
+            }
 
-        return b.toString();
+            return b.toString();
+        } catch (Exception ex) {
+            System.out.println("THIS EXCEPTION IS  BEING SQUASHED ");
+            throw new IllegalStateException("THIS EXCEPTION IS  BEING SQUASHED ", ex);
+        } finally {
+            System.out.println("CLOSING MPC OUTSTREAM "+ Thread.currentThread().getId());
+            out.close();
+            writer.close();
+        }
     }
 }

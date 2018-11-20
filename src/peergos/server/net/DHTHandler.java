@@ -52,6 +52,7 @@ public class DHTHandler implements HttpHandler {
 
             switch (path) {
                 case "block/put": {
+                    System.out.println("HANDLER RECEIVED block/put");
                     PublicKeyHash ownerHash = PublicKeyHash.fromString(last.apply("owner"));
                     PublicKeyHash writerHash = PublicKeyHash.fromString(last.apply("writer"));
                     List<byte[]> signatures = Arrays.stream(last.apply("signatures").split(","))
@@ -232,12 +233,14 @@ public class DHTHandler implements HttpHandler {
             }
             byte[] raw = json.getBytes();
             exchange.sendResponseHeaders(200, raw.length);
-            DataOutputStream dout = new DataOutputStream(exchange.getResponseBody());
-            dout.write(raw);
-            dout.flush();
-            dout.close();
-        } catch (IOException e)
-        {
+
+
+            try (DataOutputStream dout = new DataOutputStream(exchange.getResponseBody())){
+                System.out.println("HANDLER: opening RESPONSE BODY HERE " + Thread.currentThread().getId());
+                dout.write(raw);
+                System.out.println("HANDLER: closing RESPONSE  BODY "  + Thread.currentThread().getId());
+            }
+        } catch (IOException e) {
             LOG.log(Level.WARNING, e.getMessage(), e);
         }
     }

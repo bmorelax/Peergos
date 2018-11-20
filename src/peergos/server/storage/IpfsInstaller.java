@@ -71,7 +71,7 @@ public class IpfsInstaller {
             }
         }
         else {
-            LOG().info("ipfs-exe "+ targetFile + " not available, downloading");
+            LOG().info("ipfs-exe "+ targetFile + " not available");
         }
         install(targetFile, downloadTarget);
     }
@@ -83,6 +83,7 @@ public class IpfsInstaller {
                 byte[] raw = Files.readAllBytes(cacheFile);
                 Multihash computed = new Multihash(Multihash.Type.sha2_256, Hash.sha256(raw));
                 if (computed.equals(downloadTarget.multihash)) {
+                    LOG().info("Using cached ipfs binary from "+ cacheFile);
                     atomicallySaveToFile(targetFile, raw);
                     targetFile.toFile().setExecutable(true);
                     return;

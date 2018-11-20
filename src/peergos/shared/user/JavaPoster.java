@@ -68,9 +68,13 @@ public class JavaPoster implements HttpPoster {
     public CompletableFuture<byte[]> postMultipart(String url, List<byte[]> files) {
         try {
             Multipart mPost = new Multipart(buildURL(url).toString(), "UTF-8");
+            System.out.println("POSTER: STARTING "+ files.size() +" files.. "   + Thread.currentThread().getId());
+//            new  Exception("HERE " + Thread.currentThread().getId()).printStackTrace();
+
             for (byte[] file : files)
                 mPost.addFilePart("file", new NamedStreamable.ByteArrayWrapper(file));
-            return CompletableFuture.completedFuture(mPost.finish().getBytes());
+            byte[] bytes = mPost.finish().getBytes();
+            return CompletableFuture.completedFuture(bytes);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

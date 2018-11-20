@@ -111,6 +111,15 @@ public class NetworkAccess {
         return build(core, poster, true);
     }
 
+    public static CompletableFuture<NetworkAccess> buildJava(URL serverAddress, String pkiNodeId, boolean isPeergosServer) {
+        Multihash pkiServerNodeId = Cid.decode(pkiNodeId);
+        JavaPoster poster = new JavaPoster(serverAddress);
+        CoreNode core = isPeergosServer ?
+                buildDirectCorenode(poster) :
+                buildProxyingCorenode(poster, pkiServerNodeId);
+        return build(core, poster, true);
+    }
+
     public static CompletableFuture<NetworkAccess> buildJava(URL target) {
         JavaPoster poster = new JavaPoster(target);
         return build(buildDirectCorenode(poster), poster, false);
