@@ -25,7 +25,7 @@ import static org.junit.Assert.assertTrue;
 import static peergos.server.Main.ENSURE_IPFS_INSTALLED;
 import static peergos.server.Main.IPFS;
 
-public class OtherMultiNodeNetworkTests {
+public class P2pStreamNetworkTests {
     private static Args args = UserTests.buildArgs().with("useIPFS", "true");
 
     private static Random random = new Random(0);
@@ -55,15 +55,15 @@ public class OtherMultiNodeNetworkTests {
         ENSURE_IPFS_INSTALLED.main(normalNode);
         IPFS.main(normalNode);
 
-        nodes.add(buildProxiedApi(ipfsGatewayPort, pkiNodeId));
+        nodes.add(buildProxiedApi(ipfsApiPort, ipfsGatewayPort, pkiNodeId));
     }
 
     private static NetworkAccess buildApi(Args args) throws Exception {
         return NetworkAccess.buildJava(new URL("http://localhost:" + args.getInt("port"))).get();
     }
 
-    private static NetworkAccess buildProxiedApi(int ipfsGatewayPort, Multihash pkinodeId) throws Exception {
-        return NetworkAccess.buildJava(new URL("http://localhost:" + ipfsGatewayPort), pkinodeId.toBase58(), false).get();
+    private static NetworkAccess buildProxiedApi(int ipfsApiPort, int ipfsGatewayPort, Multihash pkinodeId) throws Exception {
+        return NetworkAccess.buildJava(new URL("http://localhost:" + ipfsApiPort), new URL("http://localhost:" + ipfsGatewayPort), pkinodeId.toBase58(), false).get();
     }
 
     @Test

@@ -312,10 +312,10 @@ public class Main {
             ContentAddressedStorage p2pDht = new ContentAddressedStorage.Proxying(filteringDht, proxingDht, nodeId, core);
 
             MutablePointersProxy proxingMutable = new HttpMutablePointers(ipfsGateway, ipfsGateway);
-            MutablePointers p2mMutable = new ProxyingMutablePointers(nodeId, core, localMutable, proxingMutable);
+            MutablePointers p2pMutable = new ProxyingMutablePointers(nodeId, core, localMutable, proxingMutable);
             Path blacklistPath = a.fromPeergosDir("blacklist_file", "blacklist.txt");
-            PublicKeyBlackList blacklist = new UserBasedBlacklist(blacklistPath, core, p2mMutable, p2pDht);
-            MutablePointers mutablePointers = new BlockingMutablePointers(new PinningMutablePointers(p2mMutable, p2pDht), blacklist);
+            PublicKeyBlackList blacklist = new UserBasedBlacklist(blacklistPath, core, p2pMutable, p2pDht);
+            MutablePointers mutablePointers = new BlockingMutablePointers(new PinningMutablePointers(p2pMutable, p2pDht), blacklist);
 
             SocialNetworkProxy httpSocial = new HttpSocialNetwork(ipfsGateway, ipfsGateway);
             String socialNodeFile = a.getArg("social-sql-file");
