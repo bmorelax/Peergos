@@ -52,7 +52,7 @@ public class DHTHandler implements HttpHandler {
 
             switch (path) {
                 case "block/put": {
-                    System.out.println("HANDLER RECEIVED block/put");
+                    System.out.println("HANDLER RECEIVED block/put Thread:"  + Thread.currentThread().getId());
                     PublicKeyHash ownerHash = PublicKeyHash.fromString(last.apply("owner"));
                     PublicKeyHash writerHash = PublicKeyHash.fromString(last.apply("writer"));
                     List<byte[]> signatures = Arrays.stream(last.apply("signatures").split(","))

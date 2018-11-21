@@ -7,28 +7,20 @@ import java.util.*;
 public class Multipart {
     private final String boundary;
     private static final String LINE_FEED = "\r\n";
-    private HttpURLConnection httpConn;
     private String charset;
-    private OutputStream out;
     private ByteArrayOutputStream cache;
     private PrintWriter writer;
+    private final URL target;
 
     public Multipart(String requestURL, String charset) throws IOException {
         this.charset = charset;
 
         boundary = createBoundary();
 
-        URL url = new URL(requestURL);
-        httpConn = (HttpURLConnection) url.openConnection();
-        httpConn.setUseCaches(false);
-        httpConn.setDoOutput(true);
-        httpConn.setDoInput(true);
-        httpConn.setRequestProperty("Expect", "100-continue");
-        httpConn.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + boundary);
-        httpConn.setRequestProperty("User-Agent", "Java IPFS Client");
-        httpConn.setRequestProperty("Connection", "keep-alive");
+        this.target = new URL(requestURL);
         cache = new ByteArrayOutputStream();
         writer = new PrintWriter(new OutputStreamWriter(cache, charset), true);
+        System.out.println("POSTER: CREATING MPC Thread:"  + Thread.currentThread().getId() + " to " + requestURL);
     }
 
     public static String createBoundary() {
@@ -114,15 +106,22 @@ public class Multipart {
     public String finish() throws IOException {
         StringBuilder b = new StringBuilder();
 
-        System.out.println("POSTER: FINISHING MULTIPART POST "  + Thread.currentThread().getId());
+        System.out.println("POSTER: FINISHING MULTIPART POST Thread:"  + Thread.currentThread().getId());
         try {
             writer.append("--" + boundary + "--").append(LINE_FEED);
             writer.flush();
-            System.out.println("POSTER: CLOSED OUTPUT STREAM " + Thread.currentThread().getId());
-            byte[] bytes = cache.toByteArray();
-            httpConn.setRequestProperty("Content-Length", ""+bytes.length);
-            out = httpConn.getOutputStream();
-            out.write(bytes);
+            byte[] requestBody = cache.toByteArray();
+            HttpURLConnection httpConn = (HttpURLConnection) target.openConnection();
+            httpConn.setUseCaches(false);
+            httpConn.setDoOutput(true);
+            httpConn.setDoInput(true);
+//            httpConn.setRequestProperty("Expect", "100-continue");
+            httpConn.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + boundary);
+            httpConn.setRequestProperty("User-Agent", "Java IPFS Client");
+            httpConn.setRequestProperty("Connection", "close");
+            httpConn.setRequestProperty("Content-Length", ""+requestBody.length);
+            OutputStream out = httpConn.getOutputStream();
+            out.write(requestBody);
             out.flush();
             int status = httpConn.getResponseCode();
             System.out.println("POSTER: GETTING RESPONSE CODE " + Thread.currentThread().getId());
@@ -133,9 +132,9 @@ public class Multipart {
                 while ((line = reader.readLine()) != null) {
                     b.append(line);
                 }
-                System.out.println("CLOSING MPC INPUTSTREAM "+ Thread.currentThread().getId());
+                System.out.println("POSTER: CLOSING MPC INPUTSTREAM "+ Thread.currentThread().getId());
                 reader.close();
-//                httpConn.disconnect();
+                httpConn.disconnect();
             } else {
                 try {
                     BufferedReader reader = new BufferedReader(new InputStreamReader(
@@ -144,7 +143,7 @@ public class Multipart {
                     while ((line = reader.readLine()) != null) {
                         b.append(line);
                     }
-                    System.out.println("CLOSING MPC INPUTSTREAM "+ Thread.currentThread().getId());
+                    System.out.println("POSTER: CLOSING MPC INPUTSTREAM "+ Thread.currentThread().getId());
                     reader.close();
                 } catch (Throwable t) {
                 }
@@ -155,10 +154,6 @@ public class Multipart {
         } catch (Exception ex) {
             System.out.println("THIS EXCEPTION IS  BEING SQUASHED ");
             throw new IllegalStateException("THIS EXCEPTION IS  BEING SQUASHED ", ex);
-        } finally {
-            System.out.println("CLOSING MPC OUTSTREAM "+ Thread.currentThread().getId());
-            out.close();
-            writer.close();
         }
     }
 }

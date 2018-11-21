@@ -76,7 +76,9 @@ public class P2pStreamNetworkTests {
         String filename = "hey.txt";
         FileTreeNode upload = u1.getUserRoot().get().uploadFile(filename,
                 new AsyncReader.ArrayBacked(data), data.length, nodes.get(1), crypto.random, x -> { }, u1.fragmenter).get();
-        Optional<FileTreeNode> file = u1.getByPath("/" + username1 + "/" + filename).get();
+        Thread.sleep(7000);
+        Optional<FileTreeNode> file = ensureSignedUp(username1, password1, nodes.get(0), crypto)
+                .getByPath("/" + username1 + "/" + filename).get();
         Assert.assertTrue(file.isPresent());
     }
 
